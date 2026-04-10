@@ -25,7 +25,7 @@ describe('SessaoFisioController (Unit/Integration)', () => {
     findAll: jest.fn(),
     findById: jest.fn(),
     update: jest.fn(),
-    delete: jest.fn(),
+    deactivate: jest.fn(),
   };
 
   beforeAll(async () => {
@@ -147,15 +147,20 @@ describe('SessaoFisioController (Unit/Integration)', () => {
       });
     });
 
-    it('Validação 7: deve falhar se progressoBoa for true sem sessão anterior', async () => {
-      const message = 'progressoBoa só pode ser true se já existir ao menos uma sessão anterior...';
-      sessaoFisioServiceMock.create.mockRejectedValue(new BadRequestDomainException(message));
+    it('Regra 7: deve permitir progressoBoa igual a false e retornar alerta se a regressão for consecutiva (Mock)', async () => {
+      // Configuramos o mock para retornar a sessão mockada com um alerta
+      const alertaFake = 'Alerta: 3 sessões consecutivas sem progressão para a lesão "tendão flexor". Revisão do protocolo de tratamento recomendada.';
+      sessaoFisioServiceMock.create.mockResolvedValue({
+        ...mockSessao,
+        progressoBoa: false,
+        alerta: alertaFake,
+      });
 
       const payload = {
         cavaloId: 1,
         focoLesao: 'tendão flexor',
         dataSessao: '2024-06-20',
-        progressoBoa: true,
+        progressoBoa: false,
         duracaoMin: 45,
       };
 
@@ -163,10 +168,12 @@ describe('SessaoFisioController (Unit/Integration)', () => {
         .post('/sessoes-fisio')
         .send(payload);
 
-      expect(response.status).toBe(HttpStatus.BAD_REQUEST);
+      expect(response.status).toBe(HttpStatus.CREATED);
       expect(response.body).toMatchObject({
-        statusCode: 400,
-        message: message,
+        ...mockSessao,
+        progressoBoa: false,
+        dataSessao: mockSessao.dataSessao.toISOString(),
+        alerta: alertaFake,
       });
     });
   });

@@ -21,7 +21,7 @@ export class SessaoFisioTypeOrmRepository implements SessaoFisioRepositoryPort {
   }
 
   async findById(id: number): Promise<SessaoFisio | null> {
-    const entity = await this.ormRepo.findOne({ where: { id, ativo: true } });
+    const entity = await this.ormRepo.findOne({ where: { id } });
     return entity ? this.toDomain(entity) : null;
   }
 
@@ -53,22 +53,25 @@ export class SessaoFisioTypeOrmRepository implements SessaoFisioRepositoryPort {
 
   async update(id: number, data: UpdateSessaoFisioData): Promise<SessaoFisio> {
     await this.ormRepo.update(id, data);
-    const updated = await this.ormRepo.findOneOrFail({ where: { id } });
+    const updated = await this.ormRepo.findOneOrFail({ where: { id, ativo: true } });
     return this.toDomain(updated);
   }
 
-  async delete(id: number): Promise<SessaoFisio> {
+  async deactivate(id: number): Promise<SessaoFisio> {
     await this.ormRepo.update(id, { ativo: false });
     const deactivated = await this.ormRepo.findOneOrFail({ where: { id } });
     return this.toDomain(deactivated);
   }
 
-  async findByCavaloIdAndFocoLesao(
+  async findUltimasSessoesPorLesao(
     cavaloId: number,
     focoLesao: string,
+    limite: number,
   ): Promise<SessaoFisio[]> {
     const entities = await this.ormRepo.find({
       where: { cavaloId, focoLesao, ativo: true },
+      order: { dataSessao: 'DESC' },
+      take: limite,
     });
     return entities.map((e) => this.toDomain(e));
   }

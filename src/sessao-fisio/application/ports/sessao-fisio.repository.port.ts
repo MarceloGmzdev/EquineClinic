@@ -9,6 +9,7 @@ export interface SessaoFisioRepositoryPort {
   findById(id: number): Promise<SessaoFisio | null>;
   findAll(filters: SessaoFisioFilterParams, pagination: PaginationParams): Promise<PaginatedResult<SessaoFisio>>;
   update(id: number, data: UpdateSessaoFisioData): Promise<SessaoFisio>;
-  delete(id: number): Promise<SessaoFisio>;
-  findByCavaloIdAndFocoLesao(cavaloId: number, focoLesao: string): Promise<SessaoFisio[]>;
-}
+  deactivate(id: number): Promise<SessaoFisio>;
+  /** Retorna as últimas N sessões (decrescente por data) para um cavalo e lesão específicos */
+  findUltimasSessoesPorLesao(cavaloId: number, focoLesao: string, limite: number): Promise<SessaoFisio[]>;
+}

@@ -8,6 +8,9 @@ import {
     Param,
     Query,
     ParseIntPipe,
+    DefaultValuePipe,
+    HttpCode,
+    HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { SessaoFisioService } from '../application/sessao-fisio.service';
@@ -25,6 +28,7 @@ export class SessaoFisioController {
     @ApiResponse({ status: 400, description: 'Dados inválidos ou violação de regra de negócio' })
     @ApiResponse({ status: 403, description: 'Cavalo não está em tratamento ativo' })
     @ApiResponse({ status: 404, description: 'Cavalo não encontrado' })
+    @ApiResponse({ status: 410, description: 'Cavalo inativo' })
     create(@Body() dto: CreateSessaoFisioDto) {
         return this.sessaoFisioService.create(dto);
     }
@@ -44,20 +48,22 @@ export class SessaoFisioController {
     @ApiQuery({ name: 'dataSessaoFim', required: false, type: String, description: 'Data fim (YYYY-MM-DD)' })
     @ApiResponse({ status: 200, description: 'Lista de sessões retornada com sucesso' })
     findAll(
-        @Query('page') page?: number,
-        @Query('limit') limit?: number,
-        @Query('cavaloId') cavaloId?: number,
+        @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+        @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+        @Query('cavaloId', new DefaultValuePipe(undefined), new ParseIntPipe({ optional: true })) cavaloId?: number,
         @Query('focoLesao') focoLesao?: string,
-        @Query('progressoBoa') progressoBoa?: boolean,
+        @Query('progressoBoa', new DefaultValuePipe(undefined)) progressoBoaRaw?: string,
         @Query('sort') sort?: 'dataSessao' | 'duracaoMin' | 'cavaloId',
         @Query('order') order?: 'asc' | 'desc',
-        @Query('duracaoMinima') duracaoMinima?: number,
-        @Query('duracaoMaxima') duracaoMaxima?: number,
+        @Query('duracaoMinima', new DefaultValuePipe(undefined), new ParseIntPipe({ optional: true })) duracaoMinima?: number,
+        @Query('duracaoMaxima', new DefaultValuePipe(undefined), new ParseIntPipe({ optional: true })) duracaoMaxima?: number,
         @Query('dataSessaoInicio') dataSessaoInicio?: string,
         @Query('dataSessaoFim') dataSessaoFim?: string,
     ) {
+        // ParseBoolPipe rejeita valores não booleanos — convertemos manualmente para suportar undefined
+        const progressoBoa = progressoBoaRaw === 'true' ? true : progressoBoaRaw === 'false' ? false : undefined;
         const filters = { cavaloId, focoLesao, progressoBoa, sort, order, duracaoMinima, duracaoMaxima, dataSessaoInicio, dataSessaoFim };
-        const pagination = { page: page ?? 1, limit: limit ?? 10 };
+        const pagination = { page, limit };
         return this.sessaoFisioService.findAll(filters, pagination);
     }
 
@@ -66,6 +72,7 @@ export class SessaoFisioController {
     @ApiParam({ name: 'id', type: Number })
     @ApiResponse({ status: 200, description: 'Sessão encontrada' })
     @ApiResponse({ status: 404, description: 'Sessão não encontrada' })
+    @ApiResponse({ status: 410, description: 'Sessão inativa' })
     findById(@Param('id', ParseIntPipe) id: number) {
         return this.sessaoFisioService.findById(id);
     }
@@ -76,16 +83,19 @@ export class SessaoFisioController {
     @ApiResponse({ status: 200, description: 'Sessão atualizada com sucesso' })
     @ApiResponse({ status: 400, description: 'Dados inválidos' })
     @ApiResponse({ status: 404, description: 'Sessão não encontrada' })
+    @ApiResponse({ status: 410, description: 'Sessão inativa' })
     update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateSessaoFisioDto) {
         return this.sessaoFisioService.update(id, dto);
     }
 
     @Delete(':id')
+    @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Desativar sessão de fisioterapia (soft delete)' })
     @ApiParam({ name: 'id', type: Number })
     @ApiResponse({ status: 200, description: 'Sessão desativada com sucesso — retorna o objeto desativado' })
     @ApiResponse({ status: 404, description: 'Sessão não encontrada' })
-    delete(@Param('id', ParseIntPipe) id: number) {
-        return this.sessaoFisioService.delete(id);
+    @ApiResponse({ status: 410, description: 'Sessão já estava inativa' })
+    deactivate(@Param('id', ParseIntPipe) id: number) {
+        return this.sessaoFisioService.deactivate(id);
     }
-}
+}
