@@ -1,7 +1,15 @@
 /*
-A ideia é que o filtro não conhece nenhuma exceção concreta. Ele apenas verifica instanceof DomainException e lê o statusCode que
-cada subclasse já carrega. Para adicionar uma nova exceção, você cria a subclasse e o filtro não precisa ser tocado utilizando Polimofirsmo via
-*/
+ * AllExceptionsFilter — filtro global de exceções.
+ *
+ * Design:
+ *  - DomainException: cada subclasse carrega seu próprio statusCode HTTP.
+ *    O filter lê exception.statusCode sem precisar conhecer nenhuma subclasse
+ *    concreta (Open/Closed Principle).
+ *  - EntityNotFoundError (TypeORM): mapeado para 404 para evitar que race
+ *    conditions em findOneOrFail retornem 500 ao cliente.
+ *  - HttpException (NestJS): repassa status e message diretamente.
+ *  - Qualquer outro erro: retorna 500 com mensagem genérica.
+ */
 
 import {
   ArgumentsHost,
@@ -12,14 +20,13 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { EntityNotFoundError } from 'typeorm';
 import { DomainException } from '../exceptions/domain.exception';
-import { BadRequestDomainException } from '../exceptions/bad-request.exception';
-import { NotFoundDomainException } from '../exceptions/not-found.exception';
-import { ForbiddenDomainException } from '../exceptions/forbidden.exception';
 
 interface ErrorResponse {
   statusCode: number;
   message: string;
+  path: string;
   timestamp: string;
 }
 
@@ -27,25 +34,12 @@ interface ErrorResponse {
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
 
-  /** 
-   * Mapa de exceção de domínio → status HTTP. 
-   * Mantém o núcleo (Domain) independente do protocolo de transporte (HTTP).
-   */
-  private static readonly DOMAIN_STATUS_MAP = new Map<
-    new (...args: any[]) => DomainException,
-    number
-  >([
-    [BadRequestDomainException, HttpStatus.BAD_REQUEST],
-    [NotFoundDomainException,   HttpStatus.NOT_FOUND],
-    [ForbiddenDomainException,  HttpStatus.FORBIDDEN],
-  ]);
-
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    const errorResponse = this.resolveException(exception);
+    const errorResponse = this.resolveException(exception, request.url);
 
     this.logger.error(
       `${request.method} ${request.url} → ${errorResponse.statusCode}`,
@@ -55,56 +49,78 @@ export class AllExceptionsFilter implements ExceptionFilter {
     response.status(errorResponse.statusCode).json(errorResponse);
   }
 
-  private resolveException(exception: unknown): ErrorResponse {
+  private resolveException(exception: unknown, path: string): ErrorResponse {
     if (exception instanceof DomainException) {
-      return this.handleDomainException(exception);
+      return this.handleDomainException(exception, path);
+    }
+
+    if (exception instanceof EntityNotFoundError) {
+      return this.handleEntityNotFound(path);
     }
 
     if (exception instanceof HttpException) {
-      return this.handleHttpException(exception);
+      return this.handleHttpException(exception, path);
     }
 
-    return this.handleUnknown();
+    return this.handleUnknown(path);
   }
 
-  private handleDomainException(exception: DomainException): ErrorResponse {
-    let statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
-
-    for (const [ExceptionClass, code] of AllExceptionsFilter.DOMAIN_STATUS_MAP) {
-      if (exception instanceof ExceptionClass) {
-        statusCode = code;
-        break;
-      }
-    }
-
+  /**
+   * Lê o statusCode diretamente da instância — nenhuma exceção concreta
+   * é importada neste arquivo (OCP: adicionar nova exceção = zero edições aqui).
+   */
+  private handleDomainException(exception: DomainException, path: string): ErrorResponse {
     return {
-      statusCode,
+      statusCode: exception.statusCode,
       message: exception.message,
+      path,
       timestamp: new Date().toISOString(),
     };
   }
 
-  private handleHttpException(exception: HttpException): ErrorResponse {
+  /**
+   * TypeORM lança EntityNotFoundError quando findOneOrFail não encontra resultado.
+   * Deve ser tratado como 404, não 500.
+   */
+  private handleEntityNotFound(path: string): ErrorResponse {
+    return {
+      statusCode: HttpStatus.NOT_FOUND,
+      message: 'Recurso não encontrado',
+      path,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  private handleHttpException(exception: HttpException, path: string): ErrorResponse {
     const status = exception.getStatus();
     const exResponse = exception.getResponse();
-    
-    // Captura mensagens de erro do ValidationPipe (podem ser array de strings)
-    const message = typeof exResponse === 'string'
-      ? exResponse
-      : (exResponse as any).message ?? exception.message;
+
+    // Interface interna que representa o shape do ValidationPipe do NestJS
+    interface NestValidationResponse {
+      message: string | string[];
+      statusCode: number;
+      error?: string;
+    }
+
+    const raw =
+      typeof exResponse === 'string'
+        ? exResponse
+        : (exResponse as NestValidationResponse).message ?? exception.message;
 
     return {
       statusCode: status,
-      message: Array.isArray(message) ? message.join('; ') : message,
+      message: Array.isArray(raw) ? raw.join('; ') : raw,
+      path,
       timestamp: new Date().toISOString(),
     };
   }
 
-  private handleUnknown(): ErrorResponse {
+  private handleUnknown(path: string): ErrorResponse {
     return {
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       message: 'Erro interno do servidor',
+      path,
       timestamp: new Date().toISOString(),
     };
   }
-}
+}
