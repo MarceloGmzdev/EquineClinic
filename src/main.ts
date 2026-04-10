@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './shared/filters/all-exceptions.filter';
+import { ExceptionInterceptor } from './shared/interceptors/exception.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -10,6 +11,7 @@ async function bootstrap() {
   app.setGlobalPrefix('v1');
 
   app.useGlobalFilters(new AllExceptionsFilter());
+  app.useGlobalInterceptors(new ExceptionInterceptor());
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -21,12 +23,14 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('Clinica de Recuperacao Equina')
-    .setDescription('API RESTful para gestao de cavalos e sessoes de fisioterapia')
+    .setDescription(
+      'API RESTful para gestao de cavalos e sessoes de fisioterapia',
+    )
     .setVersion('1.0')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup('swagger-ui', app, document);
 
   await app.listen(3000);
 }

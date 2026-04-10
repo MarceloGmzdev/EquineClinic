@@ -1,47 +1,35 @@
 import {
-  ArgumentsHost,
-  Catch,
-  ExceptionFilter,
+  Injectable,
+  NestInterceptor,
+  ExecutionContext,
+  CallHandler,
+  Logger,
   HttpException,
   HttpStatus,
-  Logger,
 } from '@nestjs/common';
+import { Observable, catchError } from 'rxjs';
 import { EntityNotFoundError } from 'typeorm';
 import { DomainException } from '../exceptions/domain.exception';
+import { ErrorResponse } from '../exceptions/exception-response';
 
-export interface ErrorDetail {
-  field?: string;
-  code: string;
-  description: string;
-}
+@Injectable()
+export class ExceptionInterceptor implements NestInterceptor {
+  private readonly logger = new Logger(ExceptionInterceptor.name);
 
-export interface ErrorResponse {
-  status: number;
-  message: string;
-  error: string;
-  detail: ErrorDetail[];
-}
-
-@Catch()
-export class AllExceptionsFilter implements ExceptionFilter {
-  private readonly logger = new Logger(AllExceptionsFilter.name);
-
-  catch(exception: unknown, host: ArgumentsHost): void {
-    const ctx = host.switchToHttp();
-    const response = ctx.getResponse();
-    const request = ctx.getRequest();
-
-    const errorResponse = this.resolveException(exception);
-
-    this.logger.error(
-      `${request.method} ${request.url} → ${errorResponse.status}`,
-      exception instanceof Error ? exception.stack : String(exception),
+  intercept(
+    context: ExecutionContext,
+    next: CallHandler,
+  ): Observable<ErrorResponse> {
+    return next.handle().pipe(
+      catchError((exception: Error) => {
+        const response = this.mapException(exception);
+        this.logError(context, response.status);
+        throw new HttpException(response, response.status);
+      }),
     );
-
-    response.status(errorResponse.status).json(errorResponse);
   }
 
-  private resolveException(exception: unknown): ErrorResponse {
+  private mapException(exception: Error): ErrorResponse {
     if (exception instanceof DomainException) {
       return this.handleDomainException(exception);
     }
@@ -64,6 +52,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       error: exception.code,
       detail: [
         {
+          field: exception.field,
           code: exception.code,
           description: exception.message,
         },
@@ -76,12 +65,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       status: HttpStatus.NOT_FOUND,
       message: 'Recurso não encontrado',
       error: 'ENTITY_NOT_FOUND',
-      detail: [
-        {
-          code: 'ENTITY_NOT_FOUND',
-          description: exception.message,
-        },
-      ],
+      detail: [{ code: 'ENTITY_NOT_FOUND', description: exception.message }],
     };
   }
 
@@ -95,8 +79,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
         : ((exResponse as { message?: string | string[] }).message ??
           exception.message);
 
-    const errorMessage = Array.isArray(message) ? message.join('; ') : message;
-
     return {
       status,
       message: this.getMessageByStatus(status),
@@ -104,32 +86,24 @@ export class AllExceptionsFilter implements ExceptionFilter {
       detail: [
         {
           code: this.getErrorByStatus(status),
-          description: errorMessage,
+          description: Array.isArray(message) ? message.join('; ') : message,
         },
       ],
     };
   }
 
-  private handleUnknown(exception: unknown): ErrorResponse {
-    const message =
-      exception instanceof Error
-        ? exception.message
-        : 'Erro interno do servidor';
-
+  private handleUnknown(exception: Error): ErrorResponse {
     return {
       status: HttpStatus.INTERNAL_SERVER_ERROR,
       message: 'Erro interno do servidor',
       error: 'INTERNAL_SERVER_ERROR',
       detail: [
-        {
-          code: 'INTERNAL_SERVER_ERROR',
-          description: message,
-        },
+        { code: 'INTERNAL_SERVER_ERROR', description: exception.message },
       ],
     };
   }
 
-  private getMessageByStatus(status: HttpStatus): string {
+  private getMessageByStatus(status: number): string {
     const messages: Record<number, string> = {
       [HttpStatus.BAD_REQUEST]: 'Dados inválidos',
       [HttpStatus.UNAUTHORIZED]: 'Não autorizado',
@@ -141,7 +115,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     return messages[status] ?? 'Erro interno do servidor';
   }
 
-  private getErrorByStatus(status: HttpStatus): string {
+  private getErrorByStatus(status: number): string {
     const errors: Record<number, string> = {
       [HttpStatus.BAD_REQUEST]: 'BAD_REQUEST',
       [HttpStatus.UNAUTHORIZED]: 'UNAUTHORIZED',
@@ -151,5 +125,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
       [HttpStatus.INTERNAL_SERVER_ERROR]: 'INTERNAL_SERVER_ERROR',
     };
     return errors[status] ?? 'INTERNAL_SERVER_ERROR';
+  }
+
+  private logError(context: ExecutionContext, status: number): void {
+    const request = context.switchToHttp().getRequest();
+    this.logger.error(`${request.method} ${request.url} → ${status}`);
   }
 }
