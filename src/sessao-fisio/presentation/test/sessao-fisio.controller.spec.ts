@@ -80,7 +80,9 @@ describe('SessaoFisioController (Unit/Integration)', () => {
 
     it('Validação 4: deve falhar ao enviar duracaoMin fora do intervalo (Business Rule)', async () => {
       const message = 'duracaoMin deve estar entre 30 e 90 minutos';
-      sessaoFisioServiceMock.create.mockRejectedValue(new BadRequestDomainException(message));
+      sessaoFisioServiceMock.create.mockRejectedValue(
+        new BadRequestDomainException(message),
+      );
 
       const payload = {
         cavaloId: 1,
@@ -96,14 +98,18 @@ describe('SessaoFisioController (Unit/Integration)', () => {
 
       expect(response.status).toBe(HttpStatus.BAD_REQUEST);
       expect(response.body).toMatchObject({
-        statusCode: 400,
-        message: message,
+        status: 400,
+        message: 'Dados inválidos',
+        error: 'DADOS_INVALIDOS',
       });
     });
 
     it('Validação 5: deve falhar ao enviar focoLesao inválido (Whitelist)', async () => {
-      const message = 'focoLesao deve conter ao menos um dos termos: ligamento, tendão, fratura...';
-      sessaoFisioServiceMock.create.mockRejectedValue(new BadRequestDomainException(message));
+      const message =
+        'focoLesao deve conter ao menos um dos termos: ligamento, tendão, fratura...';
+      sessaoFisioServiceMock.create.mockRejectedValue(
+        new BadRequestDomainException(message),
+      );
 
       const payload = {
         cavaloId: 1,
@@ -119,14 +125,17 @@ describe('SessaoFisioController (Unit/Integration)', () => {
 
       expect(response.status).toBe(HttpStatus.BAD_REQUEST);
       expect(response.body).toMatchObject({
-        statusCode: 400,
-        message: message,
+        status: 400,
+        message: 'Dados inválidos',
+        error: 'DADOS_INVALIDOS',
       });
     });
 
     it('Validação 6: deve falhar se o cavalo não estiver em tratamento (Forbidden)', async () => {
       const message = 'Cavalo com id 1 não está em tratamento ativo';
-      sessaoFisioServiceMock.create.mockRejectedValue(new ForbiddenDomainException(message));
+      sessaoFisioServiceMock.create.mockRejectedValue(
+        new ForbiddenDomainException(message),
+      );
 
       const payload = {
         cavaloId: 1,
@@ -142,14 +151,16 @@ describe('SessaoFisioController (Unit/Integration)', () => {
 
       expect(response.status).toBe(HttpStatus.FORBIDDEN);
       expect(response.body).toMatchObject({
-        statusCode: 403,
-        message: message,
+        status: 403,
+        message: 'Acesso negado',
+        error: 'ACESSO_NEGADO',
       });
     });
 
     it('Regra 7: deve permitir progressoBoa igual a false e retornar alerta se a regressão for consecutiva (Mock)', async () => {
       // Configuramos o mock para retornar a sessão mockada com um alerta
-      const alertaFake = 'Alerta: 3 sessões consecutivas sem progressão para a lesão "tendão flexor". Revisão do protocolo de tratamento recomendada.';
+      const alertaFake =
+        'Alerta: 3 sessões consecutivas sem progressão para a lesão "tendão flexor". Revisão do protocolo de tratamento recomendada.';
       sessaoFisioServiceMock.create.mockResolvedValue({
         ...mockSessao,
         progressoBoa: false,

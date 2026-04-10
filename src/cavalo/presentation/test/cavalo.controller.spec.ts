@@ -79,7 +79,9 @@ describe('CavaloController (Unit/Integration)', () => {
 
     it('Validação 1: deve falhar ao enviar data futura (Business Rule)', async () => {
       const message = 'dataAquisicao não pode ser uma data futura';
-      cavaloServiceMock.create.mockRejectedValue(new BadRequestDomainException(message));
+      cavaloServiceMock.create.mockRejectedValue(
+        new BadRequestDomainException(message),
+      );
 
       const payload = {
         nomeHaras: 'Haras Teste',
@@ -94,15 +96,17 @@ describe('CavaloController (Unit/Integration)', () => {
 
       expect(response.status).toBe(HttpStatus.BAD_REQUEST);
       expect(response.body).toMatchObject({
-        statusCode: 400,
-        message: message,
+        status: 400,
+        message: 'Dados inválidos',
+        error: 'DADOS_INVALIDOS',
       });
-      expect(response.body).toHaveProperty('timestamp');
     });
 
     it('Validação 2: deve falhar ao enviar valorCompra <= 0 (Business Rule)', async () => {
       const message = 'valorCompra deve ser maior que zero';
-      cavaloServiceMock.create.mockRejectedValue(new BadRequestDomainException(message));
+      cavaloServiceMock.create.mockRejectedValue(
+        new BadRequestDomainException(message),
+      );
 
       const payload = {
         nomeHaras: 'Haras Teste',
@@ -117,8 +121,9 @@ describe('CavaloController (Unit/Integration)', () => {
 
       expect(response.status).toBe(HttpStatus.BAD_REQUEST);
       expect(response.body).toMatchObject({
-        statusCode: 400,
-        message: message,
+        status: 400,
+        message: 'Dados inválidos',
+        error: 'DADOS_INVALIDOS',
       });
     });
   });
@@ -126,14 +131,17 @@ describe('CavaloController (Unit/Integration)', () => {
   describe('GET /cavalos/:id', () => {
     it('Validação 3: deve retornar 404 se o cavalo não existir (Business Rule)', async () => {
       const message = 'Cavalo com id 999 não encontrado';
-      cavaloServiceMock.findById.mockRejectedValue(new NotFoundDomainException(message));
+      cavaloServiceMock.findById.mockRejectedValue(
+        new NotFoundDomainException(message),
+      );
 
       const response = await request(app.getHttpServer()).get('/cavalos/999');
 
       expect(response.status).toBe(HttpStatus.NOT_FOUND);
       expect(response.body).toMatchObject({
-        statusCode: 404,
-        message: message,
+        status: 404,
+        message: 'Recurso não encontrado',
+        error: 'RECURSO_NAO_ENCONTRADO',
       });
     });
   });

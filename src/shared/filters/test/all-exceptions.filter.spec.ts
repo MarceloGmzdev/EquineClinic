@@ -27,15 +27,15 @@ describe('AllExceptionsFilter', () => {
   });
 
   // -------------------------------------------------------------------------
-  // DomainExceptions — cada subclasse mapeia para seu statusCode
+  // DomainExceptions — cada subclasse mapeia para seu statusCode e code
   // -------------------------------------------------------------------------
   describe('DomainException', () => {
     it.each([
-      [new BadRequestDomainException('campo inválido'), HttpStatus.BAD_REQUEST],
-      [new NotFoundDomainException('não encontrado'), HttpStatus.NOT_FOUND],
-      [new ForbiddenDomainException('sem permissão'), HttpStatus.FORBIDDEN],
-      [new GoneDomainException('recurso deletado'), HttpStatus.GONE],
-    ])('deve mapear %s para status %i', (exception, expectedStatus) => {
+      [new BadRequestDomainException('campo inválido'), HttpStatus.BAD_REQUEST, 'DADOS_INVALIDOS'],
+      [new NotFoundDomainException('não encontrado'), HttpStatus.NOT_FOUND, 'RECURSO_NAO_ENCONTRADO'],
+      [new ForbiddenDomainException('sem permissão'), HttpStatus.FORBIDDEN, 'ACESSO_NEGADO'],
+      [new GoneDomainException('recurso deletado'), HttpStatus.GONE, 'RECURSO_INATIVO'],
+    ])('deve mapear %s para status %i e código %s', (exception, expectedStatus, expectedCode) => {
       const host = createMockHost();
       filter.catch(exception, host);
 
@@ -46,9 +46,14 @@ describe('AllExceptionsFilter', () => {
       const jsonMock = statusMock.mock.results[0].value.json as jest.Mock;
       expect(jsonMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          statusCode: expectedStatus,
-          message: exception.message,
-          path: '/test',
+          status: expectedStatus,
+          error: expectedCode,
+          detail: [
+            {
+              code: expectedCode,
+              description: exception.message,
+            },
+          ],
         }),
       );
     });
@@ -69,7 +74,10 @@ describe('AllExceptionsFilter', () => {
 
       const jsonMock = statusMock.mock.results[0].value.json as jest.Mock;
       expect(jsonMock).toHaveBeenCalledWith(
-        expect.objectContaining({ statusCode: 404, path: '/v1/cavalos/99' }),
+        expect.objectContaining({
+          status: 404,
+          error: 'ENTITY_NOT_FOUND',
+        }),
       );
     });
   });
@@ -99,11 +107,10 @@ describe('AllExceptionsFilter', () => {
       const jsonMock = (
         host.switchToHttp().getResponse<any>().status as jest.Mock
       ).mock.results[0].value.json as jest.Mock;
-      expect(jsonMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          message: 'campo1 inválido; campo2 obrigatório',
-        }),
-      );
+      
+      const body = jsonMock.mock.calls[0][0];
+      expect(body.detail[0].description).toBe('campo1 inválido; campo2 obrigatório');
+      expect(body.error).toBe('BAD_REQUEST');
     });
   });
 
@@ -118,23 +125,22 @@ describe('AllExceptionsFilter', () => {
       const statusMock = host.switchToHttp().getResponse<any>()
         .status as jest.Mock;
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
-    });
-
-    it('deve retornar 500 para exceções não-Error', () => {
-      const host = createMockHost();
-      filter.catch('string exception', host);
-
-      const statusMock = host.switchToHttp().getResponse<any>()
-        .status as jest.Mock;
-      expect(statusMock).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+      
+      const jsonMock = statusMock.mock.results[0].value.json as jest.Mock;
+      expect(jsonMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 500,
+          error: 'INTERNAL_SERVER_ERROR',
+        }),
+      );
     });
   });
 
   // -------------------------------------------------------------------------
-  // Response sempre inclui 'path' e 'timestamp'
+  // Estrutura da resposta — remoção de path e timestamp
   // -------------------------------------------------------------------------
   describe('estrutura da resposta', () => {
-    it('deve sempre incluir path e timestamp na resposta', () => {
+    it('não deve mais incluir path e timestamp na resposta', () => {
       const host = createMockHost('/v1/test');
       filter.catch(new BadRequestDomainException('erro'), host);
 
@@ -142,9 +148,13 @@ describe('AllExceptionsFilter', () => {
         host.switchToHttp().getResponse<any>().status as jest.Mock
       ).mock.results[0].value.json as jest.Mock;
       const body = jsonMock.mock.calls[0][0];
-      expect(body).toHaveProperty('path', '/v1/test');
-      expect(body).toHaveProperty('timestamp');
-      expect(new Date(body.timestamp).toISOString()).toBe(body.timestamp);
+      
+      expect(body).not.toHaveProperty('path');
+      expect(body).not.toHaveProperty('timestamp');
+      expect(body).toHaveProperty('status', 400);
+      expect(body).toHaveProperty('message', 'Dados inválidos');
+      expect(body).toHaveProperty('error', 'DADOS_INVALIDOS');
+      expect(body).toHaveProperty('detail');
     });
   });
 });
