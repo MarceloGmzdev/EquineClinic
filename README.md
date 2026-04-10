@@ -83,7 +83,8 @@ A aplicação estará disponível em `http://localhost:3000`.
 Para garantir a qualidade técnica e arquitetural, a dupla dividiu as responsabilidades da seguinte forma:
 
 - **Gabriel Oliveira**: Desenvolvimento da **Camada de Domínio** (Entidades, Exceptions) e **Logística de Negócio** (Services e Portas de Aplicação). Ficou responsável pelas 7+ validações críticas de negócio.
-- **Marcelo da Silva**: Implementação da **Camada de Infraestrutura** (Adapters TypeORM, Banco de Dados SQLite) e **Camada de Apresentação** (Controllers, DTOs e Integração com Swagger/OpenAPI).
+- **Marcelo da Silva**: Implementação da **Camada de Infraestrutura** (Adapters TypeORM, Banco de Dados SQLite) e **Camada de Apresentação** (Controllers e DTOs).
+- ***A documentação via Swagger, testes unitários, validações e correções foram realizadas em conjunto a partir do diálogo e troca de idéias entre os participantes chegando na versão atual do projeto***
 
 ---
 
