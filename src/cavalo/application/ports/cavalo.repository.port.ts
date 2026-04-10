@@ -10,5 +10,5 @@ export interface CavaloRepositoryPort {
   findByIdWithSessoes(id: number): Promise<CavaloComSessoes | null>;
   findAll(filters: CavaloFilterParams, pagination: PaginationParams): Promise<PaginatedResult<Cavalo>>;
   update(id: number, data: UpdateCavaloData): Promise<Cavalo>;
-  delete(id: number): Promise<Cavalo>;
+  deactivate(id: number): Promise<Cavalo>;
 }

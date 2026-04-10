@@ -21,13 +21,13 @@ export class CavaloTypeOrmRepository implements CavaloRepositoryPort {
   }
 
   async findById(id: number): Promise<Cavalo | null> {
-    const entity = await this.ormRepo.findOne({ where: { id, ativo: true } });
+    const entity = await this.ormRepo.findOne({ where: { id } });
     return entity ? this.toDomain(entity) : null;
   }
 
   async findByIdWithSessoes(id: number): Promise<CavaloComSessoes | null> {
     const entity = await this.ormRepo.findOne({
-      where: { id, ativo: true },
+      where: { id },
       relations: ['sessoes'],
     });
     return entity ? this.toDomainWithSessoes(entity) : null;
@@ -61,11 +61,11 @@ export class CavaloTypeOrmRepository implements CavaloRepositoryPort {
 
   async update(id: number, data: UpdateCavaloData): Promise<Cavalo> {
     await this.ormRepo.update(id, data);
-    const updated = await this.ormRepo.findOneOrFail({ where: { id } });
+    const updated = await this.ormRepo.findOneOrFail({ where: { id, ativo: true } });
     return this.toDomain(updated);
   }
 
-  async delete(id: number): Promise<Cavalo> {
+  async deactivate(id: number): Promise<Cavalo> {
     await this.ormRepo.update(id, { ativo: false });
     const deactivated = await this.ormRepo.findOneOrFail({ where: { id } });
     return this.toDomain(deactivated);

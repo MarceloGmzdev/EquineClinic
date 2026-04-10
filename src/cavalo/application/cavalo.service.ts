@@ -8,6 +8,7 @@ import type { PaginatedResult, PaginationParams } from '../../shared/types/pagin
 
 import { BadRequestDomainException } from '../../shared/exceptions/bad-request.exception';
 import { NotFoundDomainException } from '../../shared/exceptions/not-found.exception';
+import { GoneDomainException } from '../../shared/exceptions/gone.exception';
 import { assertDataNaoFutura } from '../../shared/domain/date-validation';
 
 export class CavaloService {
@@ -25,13 +26,13 @@ export class CavaloService {
   async findById(id: number): Promise<Cavalo> {
     const cavalo = await this.cavaloRepository.findById(id);
     this.assertCavaloExists(cavalo, id);
-    return cavalo!;
+    return cavalo;
   }
 
   async findByIdWithSessoes(id: number): Promise<CavaloComSessoes> {
     const cavalo = await this.cavaloRepository.findByIdWithSessoes(id);
     this.assertCavaloExists(cavalo, id);
-    return cavalo!;
+    return cavalo;
   }
 
   async findAll(
@@ -56,10 +57,10 @@ export class CavaloService {
     return this.cavaloRepository.update(id, data);
   }
 
-  async delete(id: number): Promise<Cavalo> {
+  async deactivate(id: number): Promise<Cavalo> {
     const cavalo = await this.cavaloRepository.findById(id);
     this.assertCavaloExists(cavalo, id);
-    return this.cavaloRepository.delete(id);
+    return this.cavaloRepository.deactivate(id);
   }
 
   /*
@@ -73,9 +74,15 @@ export class CavaloService {
     }
   }
 
-  private assertCavaloExists(cavalo: Cavalo | CavaloComSessoes | null, id: number): void {
+  private assertCavaloExists(
+    cavalo: Cavalo | CavaloComSessoes | null,
+    id: number,
+  ): asserts cavalo is Cavalo | CavaloComSessoes {
     if (!cavalo) {
       throw new NotFoundDomainException(`Cavalo com id ${id} não encontrado`);
+    }
+    if (!cavalo.ativo) {
+      throw new GoneDomainException(`Cavalo com id ${id} não está mais disponível (inativo)`);
     }
   }
 }

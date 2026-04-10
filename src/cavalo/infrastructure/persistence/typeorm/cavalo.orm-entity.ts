@@ -20,7 +20,20 @@ export class CavaloOrmEntity {
   @Column()
   emTratamento!: boolean;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  /**
+   * O driver better-sqlite3 retorna valores de colunas `decimal` como string.
+   * O transformer garante que o valor seja sempre um número em runtime,
+   * evitando bugs silenciosos em validações e operações aritméticas.
+   */
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    transformer: {
+      to: (value: number) => value,
+      from: (value: string | number) => (typeof value === 'string' ? parseFloat(value) : value),
+    },
+  })
   valorCompra!: number;
 
   @Column({ default: true })
@@ -28,4 +41,4 @@ export class CavaloOrmEntity {
 
   @OneToMany(() => SessaoFisioOrmEntity, (sessao) => sessao.cavalo)
   sessoes!: SessaoFisioOrmEntity[];
-}
+}
