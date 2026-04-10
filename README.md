@@ -68,7 +68,7 @@ Para garantir a qualidade técnica e arquitetural, a dupla dividiu as responsabi
 - Gabriel Oliveira: Desenvolvimento da Camada de Domínio (Entidades, Exceptions) e Logística de Negócio (Services e Portas de Aplicação). Ficou responsável pelas 7+ validações críticas de negócio.
 - Marcelo da Silva: Implementação da Camada de Infraestrutura (Adapters TypeORM, Banco de Dados SQLite) e Camada de Apresentação (Controllers e DTOs).
 - ***A documentação via Swagger, testes unitários, validações e correções foram realizadas em conjunto a partir do diálogo e troca de idéias entre os participantes chegando na versão atual do projeto.***
-- ***Considerando que a Disciplina é de fundamental importância na formação dos envolvidos, todo o desenvolvimento foi realizado em conjunto onde debatiamos referente à solução implementada e pesquisavamos referente à melhores práticas e soluções para determinados problemas, realizando as alterações e adaptações sempre que necessário.***
+- ***Considerando que a Disciplina é de fundamental importância na formação dos envolvidos, todo o desenvolvimento foi realizado por ambos, onde debatiamos referente à solução implementada e pesquisavamos referente à melhores práticas e soluções para determinados problemas, realizando as alterações e adaptações sempre que necessário.***
 
 
 ---
