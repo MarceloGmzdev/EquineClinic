@@ -7,9 +7,9 @@
 ---
 
 ## Sobre o Projeto
-A **EquineClinic API** é uma API robusta para a gestão de clínicas veterinárias especializadas em cavalos. O sistema permite o controle detalhado de animais, prontuários e sessões de fisioterapia, utilizando uma arquitetura moderna e escalável.
+A EquineClinic API é uma API robusta para a gestão de clínicas veterinárias especializadas em cavalos. O sistema permite o controle detalhado de animais, prontuários e sessões de fisioterapia, utilizando uma arquitetura moderna e escalável.
 
-O tema principal é a **Gestão de Saúde Equina**, focando na rastreabilidade de tratamentos e na organização de dados clínicos.
+O tema principal é a Gestão de Saúde Equina, focando na rastreabilidade de tratamentos e na organização de dados clínicos.
 
 ---
 
@@ -37,7 +37,7 @@ npm install
 npm run start:dev
 ```
 
-A aplicação estará disponível em `http://localhost:3000`.
+A aplicação estará disponível em `http://localhost:3000` ou na porta configurada pelo usuário que se encontra na main.
 
 ---
 
@@ -58,15 +58,15 @@ A aplicação estará disponível em `http://localhost:3000`.
 - **PUT `/sessoes-fisio/:id`**: Altera as informações sobre uma sessão específica.
 - **DELETE `/sessoes-fisio/:id`**: Desativa uma sessão específica (soft delete).
 
-> **Dica:** A documentação completa e interativa (Swagger) pode ser acessada em `http://localhost:3000/swagger-ui` após iniciar o projeto.
+> **Dica:** A documentação completa e interativa (Swagger) pode ser acessada em `http://localhost:3000/swagger-ui` após iniciar o projeto(a porta onde a aplicação está executando pode variar de acordo com as configurações do usuário).
 
 ---
 
 ## Divisão de Tarefas
 Para garantir a qualidade técnica e arquitetural, a dupla dividiu as responsabilidades da seguinte forma:
 
-- **Gabriel Oliveira**: Desenvolvimento da **Camada de Domínio** (Entidades, Exceptions) e **Logística de Negócio** (Services e Portas de Aplicação). Ficou responsável pelas 7+ validações críticas de negócio.
-- **Marcelo da Silva**: Implementação da **Camada de Infraestrutura** (Adapters TypeORM, Banco de Dados SQLite) e **Camada de Apresentação** (Controllers e DTOs).
+- Gabriel Oliveira: Desenvolvimento da Camada de Domínio (Entidades, Exceptions) e Logística de Negócio (Services e Portas de Aplicação). Ficou responsável pelas 7+ validações críticas de negócio.
+- Marcelo da Silva: Implementação da Camada de Infraestrutura (Adapters TypeORM, Banco de Dados SQLite) e Camada de Apresentação (Controllers e DTOs).
 - ***A documentação via Swagger, testes unitários, validações e correções foram realizadas em conjunto a partir do diálogo e troca de idéias entre os participantes chegando na versão atual do projeto.***
 - ***Considerando que a Disciplina é de fundamental importância na formação dos envolvidos, todo o desenvolvimento foi realizado em conjunto onde debatiamos referente à solução implementada e pesquisavamos referente à melhores práticas e soluções para determinados problemas, realizando as alterações e adaptações sempre que necessário.***
 
@@ -74,7 +74,7 @@ Para garantir a qualidade técnica e arquitetural, a dupla dividiu as responsabi
 ---
 
 ## Arquitetura
-O projeto segue os princípios da **Arquitetura Hexagonal (Ports & Adapters)**, garantindo que a lógica de negócio seja independente de frameworks e bancos de dados.
+O projeto segue os princípios da Arquitetura Hexagonal (Ports & Adapters), garantindo que a lógica de negócio seja independente de frameworks e bancos de dados.
 
 ---
 
