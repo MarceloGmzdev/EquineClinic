@@ -44,7 +44,15 @@ export class CavaloService {
 
   async update(id: number, data: UpdateCavaloData): Promise<Cavalo> {
     const cavalo = await this.cavaloRepository.findById(id);
-    this.assertCavaloExists(cavalo, id);
+    
+    if (!cavalo) {
+      throw new NotFoundDomainException(`Cavalo com id ${id} não encontrado`);
+    }
+
+    // Impede atualizações em cavalos inativos, a menos que seja para reativá-lo
+    if (!cavalo.ativo && data.ativo !== true) {
+      throw new GoneDomainException(`Cavalo com id ${id} não está mais disponível (inativo)`);
+    }
 
     if (data.dataAquisicao !== undefined) {
       assertDataNaoFutura(data.dataAquisicao, 'dataAquisicao');

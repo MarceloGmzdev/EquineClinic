@@ -28,4 +28,4 @@ export interface CavaloComSessoes extends Cavalo {
 }
 
 export type CreateCavaloData = Omit<Cavalo, 'id' | 'ativo'>;
-export type UpdateCavaloData = Partial<CreateCavaloData>;
+export type UpdateCavaloData = Partial<Omit<Cavalo, 'id'>>;
