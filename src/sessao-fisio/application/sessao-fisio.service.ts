@@ -80,7 +80,14 @@ export class SessaoFisioService {
 
   async update(id: number, data: UpdateSessaoFisioData): Promise<SessaoFisio> {
     const sessao = await this.sessaoFisioRepository.findById(id);
-    this.assertSessaoExists(sessao, id);
+    
+    if (!sessao) {
+      throw new NotFoundDomainException(`Sessão de fisioterapia com id ${id} não encontrada`);
+    }
+
+    if (!sessao.ativo && data.ativo !== true) {
+      throw new GoneDomainException(`Sessão de fisioterapia com id ${id} não está mais disponível (inativa)`);
+    }
 
     if (data.dataSessao !== undefined) {
       assertDataNaoFutura(data.dataSessao, 'dataSessao');

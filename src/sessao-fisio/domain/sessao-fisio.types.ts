@@ -14,4 +14,4 @@ export interface SessaoFisioComAlerta extends SessaoFisio {
 }
 
 export type CreateSessaoFisioData = Omit<SessaoFisio, 'id' | 'ativo'>;
-export type UpdateSessaoFisioData = Partial<CreateSessaoFisioData>;
+export type UpdateSessaoFisioData = Partial<Omit<SessaoFisio, 'id'>>;
