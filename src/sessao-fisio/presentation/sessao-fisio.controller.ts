@@ -16,6 +16,7 @@ import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/
 import { SessaoFisioService } from '../application/sessao-fisio.service';
 import { CreateSessaoFisioDto } from './dto/create-sessao-fisio.dto';
 import { UpdateSessaoFisioDto } from './dto/update-sessao-fisio.dto';
+import { SessaoFisioComAlertaResponseDto, SessaoFisioResponseDto } from './dto/sessao-fisio.response.dto';
 
 @ApiTags('Sessões de Fisioterapia')
 @Controller('sessoes-fisio')
@@ -24,7 +25,7 @@ export class SessaoFisioController {
 
     @Post()
     @ApiOperation({ summary: 'Cadastrar nova sessão de fisioterapia' })
-    @ApiResponse({ status: 201, description: 'Sessão cadastrada com sucesso' })
+    @ApiResponse({ status: 201, description: 'Sessão cadastrada com sucesso', type: SessaoFisioComAlertaResponseDto })
     @ApiResponse({ status: 400, description: 'Dados inválidos ou violação de regra de negócio' })
     @ApiResponse({ status: 403, description: 'Cavalo não está em tratamento ativo' })
     @ApiResponse({ status: 404, description: 'Cavalo não encontrado' })
@@ -70,7 +71,7 @@ export class SessaoFisioController {
     @Get(':id')
     @ApiOperation({ summary: 'Buscar sessão por ID' })
     @ApiParam({ name: 'id', type: Number })
-    @ApiResponse({ status: 200, description: 'Sessão encontrada' })
+    @ApiResponse({ status: 200, description: 'Sessão encontrada', type: SessaoFisioResponseDto })
     @ApiResponse({ status: 404, description: 'Sessão não encontrada' })
     @ApiResponse({ status: 410, description: 'Sessão inativa' })
     findById(@Param('id', ParseIntPipe) id: number) {
@@ -80,7 +81,7 @@ export class SessaoFisioController {
     @Put(':id')
     @ApiOperation({ summary: 'Atualizar sessão de fisioterapia' })
     @ApiParam({ name: 'id', type: Number })
-    @ApiResponse({ status: 200, description: 'Sessão atualizada com sucesso' })
+    @ApiResponse({ status: 200, description: 'Sessão atualizada com sucesso', type: SessaoFisioResponseDto })
     @ApiResponse({ status: 400, description: 'Dados inválidos' })
     @ApiResponse({ status: 404, description: 'Sessão não encontrada' })
     @ApiResponse({ status: 410, description: 'Sessão inativa' })
@@ -92,7 +93,7 @@ export class SessaoFisioController {
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Desativar sessão de fisioterapia (soft delete)' })
     @ApiParam({ name: 'id', type: Number })
-    @ApiResponse({ status: 200, description: 'Sessão desativada com sucesso — retorna o objeto desativado' })
+    @ApiResponse({ status: 200, description: 'Sessão desativada com sucesso — retorna o objeto desativado', type: SessaoFisioResponseDto })
     @ApiResponse({ status: 404, description: 'Sessão não encontrada' })
     @ApiResponse({ status: 410, description: 'Sessão já estava inativa' })
     deactivate(@Param('id', ParseIntPipe) id: number) {
